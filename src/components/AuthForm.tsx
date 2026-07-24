@@ -1,14 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { createClient } from "@/lib/supabase/client";
+import { appPath } from "@/lib/paths";
 import { brandVoice } from "@/services/brandVoice";
 
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
-  const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,14 +30,19 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { full_name: fullName } },
+          options: {
+            data: { full_name: fullName },
+            emailRedirectTo:
+              typeof window === "undefined"
+                ? undefined
+                : `${window.location.origin}${appPath("/parent/dashboard/")}`,
+          },
         });
         if (error) throw error;
         // If email confirmation is off, a session exists already.
         const { data } = await supabase.auth.getSession();
         if (data.session) {
-          router.push("/parent/dashboard");
-          router.refresh();
+          window.location.href = appPath("/parent/dashboard/");
         } else {
           setInfo(copy.confirmEmail);
         }
@@ -48,8 +52,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           password,
         });
         if (error) throw error;
-        router.push("/parent/dashboard");
-        router.refresh();
+        window.location.href = appPath("/parent/dashboard/");
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : copy.genericError);
