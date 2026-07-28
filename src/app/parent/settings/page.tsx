@@ -6,6 +6,7 @@ import {
   AI_MONTHLY_CHECKS_PER_STUDENT,
   PLANS,
   getPlan,
+  type PlanId,
   promptsPerWeekFor,
 } from "@/lib/plans";
 import { currentCalendarMonthRange } from "@/lib/usage";
@@ -27,6 +28,7 @@ export default function SettingsPage() {
   const [usage, setUsage] = useState<UsageRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
+  const [savingPlan, setSavingPlan] = useState<PlanId | null>(null);
 
   async function load() {
     const supabase = createClient();
@@ -87,6 +89,21 @@ export default function SettingsPage() {
     await updateSettingsFromBrowser({ aiEnabled });
     setMessage("Saved AI add-on setting.");
     await load();
+  }
+
+  async function choosePlan(nextPlan: PlanId) {
+    setMessage(null);
+    setSavingPlan(nextPlan);
+    try {
+      await updateSettingsFromBrowser({ plan: nextPlan, aiEnabled });
+      setPlan(nextPlan);
+      setMessage(`Switched to the ${getPlan(nextPlan).label} plan.`);
+      await load();
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Could not switch plans.");
+    } finally {
+      setSavingPlan(null);
+    }
   }
 
   if (loading) return <div className="card p-6 text-ink/60">Loading settings...</div>;
@@ -154,6 +171,20 @@ export default function SettingsPage() {
                   + AI Coach add-on (+${AI_ADDON_PRICE}/mo)
                 </p>
               )}
+              <button
+                type="button"
+                onClick={() => choosePlan(row.id)}
+                disabled={savingPlan !== null || row.id === currentPlan.id}
+                className={`mt-4 w-full ${
+                  row.id === currentPlan.id ? "btn-ghost opacity-70" : "btn-primary"
+                }`}
+              >
+                {row.id === currentPlan.id
+                  ? "Current plan"
+                  : savingPlan === row.id
+                    ? "Switching..."
+                    : `Choose ${row.label}`}
+              </button>
             </div>
           ))}
         </div>

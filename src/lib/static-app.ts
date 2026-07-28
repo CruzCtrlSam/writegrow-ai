@@ -5,6 +5,7 @@ import {
   AI_MONTHLY_CHECKS_PER_STUDENT,
   getPlan,
   maxStudentsFor,
+  type PlanId,
   promptsPerWeekFor,
 } from "@/lib/plans";
 import { currentCalendarMonthRange, daysUntilRollingReset } from "@/lib/usage";
@@ -296,6 +297,7 @@ export async function addStudentFromBrowser(input: {
 export async function updateSettingsFromBrowser(input: {
   characterPromptsEnabled?: boolean;
   aiEnabled?: boolean;
+  plan?: PlanId;
 }) {
   const supabase = createClient();
   const user = await requireUser();
@@ -309,7 +311,24 @@ export async function updateSettingsFromBrowser(input: {
     if (error) throw new Error(error.message);
   }
 
-  if (typeof input.aiEnabled === "boolean") {
+  if (input.plan) {
+    const { data: sub } = await supabase
+      .from("subscriptions")
+      .select("plan, ai_enabled")
+      .eq("parent_id", user.id)
+      .maybeSingle();
+    const nextPlan = getPlan(input.plan);
+    const { error } = await supabase
+      .from("subscriptions")
+      .update({
+        plan: nextPlan.id,
+        ai_enabled: nextPlan.aiAddOnAvailable ? (input.aiEnabled ?? sub?.ai_enabled === true) : false,
+      })
+      .eq("parent_id", user.id);
+    if (error) throw new Error(error.message);
+  }
+
+  if (typeof input.aiEnabled === "boolean" && !input.plan) {
     const { data: sub } = await supabase
       .from("subscriptions")
       .select("plan")
