@@ -51,6 +51,11 @@ function parsePromptSnapshot(snapshot: string | null, category: PromptCategory):
   };
 }
 
+function promptTitleFromSnapshot(snapshot: string | null): string | null {
+  const title = (snapshot ?? "").split(" — ")[0]?.trim();
+  return title || null;
+}
+
 export async function requireUser() {
   const supabase = createClient();
   const {
@@ -160,7 +165,20 @@ export async function loadPrompt({
       ? randomItem(CHARACTER_TRAITS)
       : null;
 
-  const generated = fallbackPrompt(chosenCategory, trait);
+  const { data: recentPrompts } = await supabase
+    .from("writing_submissions")
+    .select("prompt_snapshot")
+    .eq("student_id", studentId)
+    .eq("category", chosenCategory)
+    .not("prompt_snapshot", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(8);
+
+  const avoidTitles = (recentPrompts ?? [])
+    .map((row) => promptTitleFromSnapshot(row.prompt_snapshot))
+    .filter((title): title is string => Boolean(title));
+
+  const generated = fallbackPrompt(chosenCategory, trait, avoidTitles);
   const promptSnapshot = `${generated.title} — ${generated.body}`;
   const { data: submission, error } = await supabase
     .from("writing_submissions")
