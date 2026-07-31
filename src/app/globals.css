@@ -52,6 +52,163 @@ body {
   }
 }
 
+.achievement-streak {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(239, 197, 96, 0.22), transparent 28%),
+    linear-gradient(135deg, rgba(214, 235, 215, 0.9), rgba(255, 255, 255, 0.96));
+}
+
+.writing-spark {
+  position: relative;
+  width: 74px;
+  height: 74px;
+  display: grid;
+  place-items: center;
+}
+
+.writing-spark__ring {
+  position: absolute;
+  border-radius: 999px;
+  background: rgba(239, 197, 96, 0.34);
+  box-shadow: 0 0 0 10px rgba(239, 197, 96, 0.12);
+  animation: writing-spark-pulse 2.6s ease-in-out infinite;
+}
+
+.writing-spark__seed {
+  position: relative;
+  width: 28px;
+  height: 34px;
+  border-radius: 60% 60% 48% 48%;
+  background: linear-gradient(145deg, #53A45F, #EFC560);
+  box-shadow: inset -5px -6px 0 rgba(37, 106, 55, 0.12), 0 8px 20px rgba(35, 48, 42, 0.14);
+  transform: rotate(-12deg);
+}
+
+.writing-spark__seed::after {
+  content: "";
+  position: absolute;
+  left: 9px;
+  top: 5px;
+  width: 7px;
+  height: 19px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.38);
+}
+
+.writing-spark__beam {
+  position: absolute;
+  width: 4px;
+  height: 13px;
+  border-radius: 999px;
+  background: #E5AC2E;
+  transform-origin: center 38px;
+  animation: writing-spark-beam 2.6s ease-in-out infinite;
+}
+
+.writing-spark__beam--one {
+  top: 2px;
+}
+
+.writing-spark__beam--two {
+  top: 13px;
+  right: 11px;
+  transform: rotate(48deg);
+}
+
+.writing-spark__beam--three {
+  top: 13px;
+  left: 11px;
+  transform: rotate(-48deg);
+}
+
+.achievement-badge {
+  min-height: 168px;
+}
+
+.badge-mark {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #D6EBD7;
+  transform: rotate(-3deg);
+  opacity: 0.58;
+}
+
+.badge-mark--unlocked {
+  opacity: 1;
+  animation: badge-rise 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.badge-mark--sprout {
+  background: linear-gradient(145deg, #D6EBD7, #53A45F);
+}
+
+.badge-mark--honey {
+  background: linear-gradient(145deg, #FBEFD2, #EFC560);
+}
+
+.badge-mark--clay {
+  background: linear-gradient(145deg, #F6DC9E, #C2654A);
+}
+
+.badge-mark__fold {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 15px;
+  height: 15px;
+  border-radius: 0 12px 0 10px;
+  background: rgba(255, 255, 255, 0.46);
+}
+
+.badge-mark__line {
+  position: absolute;
+  left: 11px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(35, 48, 42, 0.42);
+}
+
+.badge-mark__line--one {
+  bottom: 16px;
+  width: 20px;
+}
+
+.badge-mark__line--two {
+  bottom: 9px;
+  width: 14px;
+}
+
+@keyframes writing-spark-pulse {
+  0%, 100% {
+    transform: scale(0.92);
+    opacity: 0.72;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+
+@keyframes writing-spark-beam {
+  0%, 100% {
+    opacity: 0.38;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+@keyframes badge-rise {
+  0% {
+    transform: translateY(8px) rotate(-3deg) scale(0.94);
+  }
+  100% {
+    transform: translateY(0) rotate(-3deg) scale(1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;

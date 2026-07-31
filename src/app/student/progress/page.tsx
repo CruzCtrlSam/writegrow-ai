@@ -2,7 +2,9 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { AchievementPanel } from "@/components/AchievementPanel";
 import { SkillSprout } from "@/components/SkillSprout";
+import type { AchievementSubmission } from "@/lib/achievements";
 import { SKILL_LABELS, SKILLS, type Skill } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
 import { brandVoice } from "@/services/brandVoice";
@@ -33,6 +35,7 @@ function ProgressPageInner() {
   });
   const [weekSubs, setWeekSubs] = useState(0);
   const [totalWords, setTotalWords] = useState(0);
+  const [achievementRows, setAchievementRows] = useState<AchievementSubmission[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -40,7 +43,7 @@ function ProgressPageInner() {
       if (!studentId) return setLoading(false);
       const supabase = createClient();
       const weekAgo = new Date(Date.now() - 7 * 864e5).toISOString();
-      const [{ data: scores }, { count }, { data: weekWords }] = await Promise.all([
+      const [{ data: scores }, { count }, { data: weekWords }, { data: submissions }] = await Promise.all([
         supabase
           .from("skill_scores")
           .select("skill, score, created_at")
@@ -58,6 +61,13 @@ function ProgressPageInner() {
           .select("word_count")
           .eq("student_id", studentId)
           .gte("created_at", weekAgo),
+        supabase
+          .from("writing_submissions")
+          .select("created_at, word_count, category, status")
+          .eq("student_id", studentId)
+          .eq("status", "submitted")
+          .order("created_at", { ascending: false })
+          .limit(160),
       ]);
 
       const bySkill: Record<string, number[]> = {};
@@ -70,6 +80,7 @@ function ProgressPageInner() {
       setLatest(next);
       setWeekSubs(count ?? 0);
       setTotalWords((weekWords ?? []).reduce((sum, row) => sum + (row.word_count as number), 0));
+      setAchievementRows((submissions as AchievementSubmission[] | null) ?? []);
       setLoading(false);
     }
     load();
@@ -95,6 +106,10 @@ function ProgressPageInner() {
         <Stat label="Submitted this week" value={String(weekSubs)} />
         <Stat label="Words written this week" value={String(totalWords)} />
         <Stat label="Growing skills with history" value={`${ranked.length} / ${SKILLS.length}`} />
+      </div>
+
+      <div className="mt-6">
+        <AchievementPanel submissions={achievementRows} />
       </div>
 
       <h2 className="mt-8 font-display text-xl font-semibold">Growth garden</h2>

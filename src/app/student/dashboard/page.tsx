@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { AchievementPanel } from "@/components/AchievementPanel";
 import { SkillSprout } from "@/components/SkillSprout";
+import type { AchievementSubmission } from "@/lib/achievements";
 import {
   CATEGORY_LABELS,
   LEVEL_LABELS,
@@ -35,13 +37,14 @@ function StudentDashboardInner() {
   const studentId = useSearchParams().get("studentId");
   const [student, setStudent] = useState<Student | null>(null);
   const [recent, setRecent] = useState<{ created_at: string; status: string; category: PromptCategory | null } | null>(null);
+  const [achievementRows, setAchievementRows] = useState<AchievementSubmission[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       if (!studentId) return setLoading(false);
       const supabase = createClient();
-      const [{ data: studentData }, { data: recentRows }] = await Promise.all([
+      const [{ data: studentData }, { data: recentRows }, { data: submissions }] = await Promise.all([
         supabase.from("students").select("*").eq("id", studentId).maybeSingle(),
         supabase
           .from("writing_submissions")
@@ -49,9 +52,17 @@ function StudentDashboardInner() {
           .eq("student_id", studentId)
           .order("created_at", { ascending: false })
           .limit(1),
+        supabase
+          .from("writing_submissions")
+          .select("created_at, word_count, category, status")
+          .eq("student_id", studentId)
+          .eq("status", "submitted")
+          .order("created_at", { ascending: false })
+          .limit(120),
       ]);
       setStudent((studentData as Student | null) ?? null);
       setRecent((recentRows?.[0] as typeof recent) ?? null);
+      setAchievementRows((submissions as AchievementSubmission[] | null) ?? []);
       setLoading(false);
     }
     load();
@@ -85,13 +96,21 @@ function StudentDashboardInner() {
       </div>
 
       <div className="card mt-6 flex flex-col gap-3 bg-sprout-50/60 p-4 sm:flex-row sm:items-center sm:gap-4 sm:p-5">
-        <span className="text-2xl">🌱</span>
+        <span className="badge-mark badge-mark--sprout badge-mark--unlocked shrink-0" aria-hidden="true">
+          <span className="badge-mark__fold" />
+          <span className="badge-mark__line badge-mark__line--one" />
+          <span className="badge-mark__line badge-mark__line--two" />
+        </span>
         <div>
           <p className="eyebrow">{brandVoice.labels.coachNote}</p>
           <p className="mt-1 text-sm text-ink/75">
             {brandVoice.getCoachNote({ category: recentCategory, seed: student.id })}
           </p>
         </div>
+      </div>
+
+      <div className="mt-6">
+        <AchievementPanel submissions={achievementRows} compact />
       </div>
 
       <h2 className="mt-8 font-display text-xl font-semibold">Choose today's growth path</h2>
