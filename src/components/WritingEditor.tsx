@@ -14,6 +14,8 @@ import {
   type PromptPayload,
 } from "@/lib/static-app";
 import { brandVoice } from "@/services/brandVoice";
+import { WritingPlanner } from "@/components/WritingPlanner";
+import { planStorageKey } from "@/lib/writing-plan";
 
 interface Prompt {
   submissionId?: string | null;
@@ -197,6 +199,7 @@ export function WritingEditor({
   const [coaching, setCoaching] = useState(false);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [error, setError] = useState<string | null>(null);
+  const [plannerOpen, setPlannerOpen] = useState(false);
 
   const words = wordCount(content);
   const pct = Math.min(100, Math.round((words / minWords) * 100));
@@ -351,6 +354,19 @@ export function WritingEditor({
       </div>
 
       {/* Editor */}
+      <div className={plannerOpen ? "writing-workspace" : "space-y-4"}>
+      {prompt && !loadingPrompt && <WritingPlanner
+        key={planStorageKey(studentId, prompt.title, prompt.body, prompt.category)}
+        storageKey={planStorageKey(studentId, prompt.title, prompt.body, prompt.category)}
+        category={prompt.category}
+        open={plannerOpen}
+        onOpenChange={setPlannerOpen}
+        onStartWriting={() => {
+          const editor = document.getElementById("essay");
+          editor?.focus();
+          editor?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }}
+      />}
       <div className="card p-4 sm:p-5">
         <label htmlFor="essay" className="label">
           {studentName}{copy.editorLabelSuffix}
@@ -408,6 +424,7 @@ export function WritingEditor({
         </div>
       </div>
 
+      </div>
       {/* Feedback */}
       {feedback && (
         <div ref={feedbackRef} className="card p-4 sm:p-6">

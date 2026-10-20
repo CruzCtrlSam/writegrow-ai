@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "node --import tsx src/services/brandVoice.test.ts && node --import tsx src/lib/diagnostics.test.ts && node --import tsx src/lib/plans.test.ts && node --import tsx src/lib/usage.test.ts && node --import tsx src/lib/prompts.test.ts && node --import tsx src/lib/achievements.test.ts"
+    "test": "node --import tsx src/services/brandVoice.test.ts && node --import tsx src/lib/diagnostics.test.ts && node --import tsx src/lib/plans.test.ts && node --import tsx src/lib/usage.test.ts && node --import tsx src/lib/prompts.test.ts && node --import tsx src/lib/achievements.test.ts && node --import tsx src/lib/writing-plan.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
