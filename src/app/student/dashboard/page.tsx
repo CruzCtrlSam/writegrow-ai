@@ -113,6 +113,10 @@ function StudentDashboardInner() {
         <AchievementPanel submissions={achievementRows} compact />
       </div>
 
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-y border-sprout-200 py-5">
+        <div><p className="eyebrow">Grammar studio</p><h3 className="mt-1 font-display text-xl font-semibold">Small fixes. Growing skills.</h3><p className="mt-1 text-sm text-ink/60">Grammar practice for grade {student.grade}.</p></div>
+        <Link href={`/student/learn?${query}`} className="btn-ghost">Start learning</Link>
+      </div>
       <h2 className="mt-8 font-display text-xl font-semibold">Choose today's growth path</h2>
       <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {(Object.keys(CATEGORY_LABELS) as PromptCategory[]).map((cat) => (

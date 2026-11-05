@@ -232,3 +232,24 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+.grammar-practice { display: grid; gap: 2rem; align-items: start; }
+.grammar-lesson-button { display: flex; gap: .75rem; align-items: flex-start; text-align: left; width: 100%; padding: 1rem .5rem; min-height: 76px; }
+.grammar-step { display: grid; place-items: center; width: 28px; height: 28px; flex-shrink: 0; border: 1px solid #91bf9b; border-radius: 50%; font-size: .8rem; font-weight: 600; }
+.grammar-passage { border-top: 1px solid #d6ebd7; border-bottom: 1px solid #d6ebd7; padding: 1.25rem 0; font-size: 1rem; line-height: 3.2; overflow-wrap: anywhere; }
+.grammar-edit { max-width: 100%; min-height: 44px; padding: .2rem .35rem; line-height: 1.5; border: 1px solid #baa6cd; border-bottom-width: 2px; border-radius: 4px; background: #f6f1fa; color: #23302a; vertical-align: baseline; }
+.grammar-edit:focus { outline: 2px solid #308747; outline-offset: 2px; }
+.grammar-edit-correct { background: #eff8f0; border-color: #308747; }
+@media (min-width: 768px) { .grammar-practice { grid-template-columns: 230px minmax(0,1fr); } }
+.proof-toolbar { display: flex; flex-wrap: wrap; gap: .5rem; padding: .5rem 0 1rem; }
+.proof-tool { width: 82px; height: 70px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: 1px solid #b1cdb7; border-radius: 6px; background: #fff; color: #376646; font-size: .75rem; font-weight: 600; cursor: grab; }
+.proof-tool[aria-pressed="true"] { background: #e4f2e6; outline: 2px solid #308747; outline-offset: 1px; }
+.proof-tool:disabled { opacity: .45; cursor: default; }
+.proof-tool:focus-visible { outline: 2px solid #308747; outline-offset: 2px; }
+.proof-target { display: inline-flex; flex-direction: column; vertical-align: bottom; max-width: 100%; position: relative; }
+.proof-annotation { height: 24px; display: flex; align-items: center; gap: 2px; max-width: 20ch; overflow: hidden; white-space: nowrap; font-size: .7rem; line-height: 1; color: #a54242; }
+.proof-annotation svg { height: 22px; width: 22px; flex-shrink: 0; }
+.proof-targets-ready .grammar-edit { outline: 2px dashed #308747; outline-offset: 2px; cursor: copy; }
+.proof-dialog { width: min(440px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); padding: 1.5rem; border: 1px solid #d6ebd7; border-radius: 8px; background: #fff; color: #23302a; box-shadow: 0 16px 60px #23302a33; }
+.proof-dialog::backdrop { background: #23302a66; }
+@media (max-width: 380px) { .proof-tool { width: 76px; } }

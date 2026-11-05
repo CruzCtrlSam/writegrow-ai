@@ -65,6 +65,7 @@ function StudentLayoutInner({
         links={[
           { href: `/student/dashboard${query}`, label: "Student Dashboard" },
           { href: `/student/write${query}`, label: "Write Today" },
+          { href: `/student/learn${query}`, label: "Learn" },
           { href: `/student/history${query}`, label: "Writing History" },
           { href: `/student/progress${query}`, label: "Progress" },
         ]}
