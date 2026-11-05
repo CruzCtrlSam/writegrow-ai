@@ -51,6 +51,14 @@ export const GRAMMAR_LESSONS: GrammarLesson[] = [
 export function lessonFixes(lesson: GrammarLesson): GrammarFix[] {
   return lesson.parts.filter((part): part is GrammarFix => typeof part !== "string");
 }
+export function passageTargets(lesson: GrammarLesson): (string | { id: string; original: string })[] {
+  return lesson.parts.flatMap((part, index) => typeof part === "string"
+    ? part.split(/(\s+)/).filter(Boolean).map((text, token) => /^\s+$/.test(text) ? text : { id: `text-${index}-${token}`, original: text })
+    : [{ id: part.id, original: part.original }]);
+}
+export function passageText(lesson: GrammarLesson, values: Record<string, string>) {
+  return passageTargets(lesson).map((target) => typeof target === "string" ? target : values[target.id] ?? target.original).join("");
+}
 export function lessonsForGrade(grade: number) {
   return GRAMMAR_LESSONS.filter((lesson) => lesson.grade === grade);
 }
@@ -58,7 +66,18 @@ function normalize(value: string) {
   return value.trim().replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/\s+/g, " ");
 }
 export function checkGrammarLesson(lesson: GrammarLesson, values: Record<string, string>) {
-  return lessonFixes(lesson).map((fix) => ({ ...fix, correct: fix.answers.some((answer) => normalize(answer) === normalize(values[fix.id] ?? fix.original)) }));
+  // Compare passages as well as slots: deleting either copy of a repeated word is valid.
+  let candidates: { text: string; correct: Set<string> }[] = [{ text: "", correct: new Set() }];
+  for (const part of lesson.parts) {
+    if (typeof part === "string") candidates = candidates.map((candidate) => ({ ...candidate, text: candidate.text + part }));
+    else candidates = candidates.flatMap((candidate) => [
+      { text: candidate.text + part.original, correct: candidate.correct },
+      ...part.answers.map((answer) => ({ text: candidate.text + answer, correct: new Set([...candidate.correct, part.id]) })),
+    ]);
+  }
+  const actual = normalize(passageText(lesson, values));
+  const matching = candidates.filter((candidate) => normalize(candidate.text) === actual).sort((a, b) => b.correct.size - a.correct.size)[0];
+  return lessonFixes(lesson).map((fix) => ({ ...fix, correct: matching ? matching.correct.has(fix.id) : fix.answers.some((answer) => normalize(answer) === normalize(values[fix.id] ?? fix.original)) }));
 }
 export interface GrammarProgress {
   selected: string;
@@ -82,7 +101,7 @@ export function restoreGrammarProgress(raw: string | null, grade: number): Gramm
     for (const lesson of GRAMMAR_LESSONS) {
       const saved = value.drafts[lesson.id];
       if (!saved || typeof saved !== "object") continue;
-      drafts[lesson.id] = Object.fromEntries(lessonFixes(lesson).filter((fix) => typeof saved[fix.id] === "string").map((fix) => [fix.id, saved[fix.id]]));
+      drafts[lesson.id] = Object.fromEntries(passageTargets(lesson).filter((target): target is { id: string; original: string } => typeof target !== "string" && typeof saved[target.id] === "string").map((target) => [target.id, saved[target.id]]));
     }
     const proofreading: Record<string, ProofreadingEdit[]> = {};
     if (value.proofreading && typeof value.proofreading === "object") for (const lesson of GRAMMAR_LESSONS) {
@@ -91,7 +110,7 @@ export function restoreGrammarProgress(raw: string | null, grade: number): Gramm
       proofreading[lesson.id] = history.filter((edit: unknown): edit is ProofreadingEdit => {
         if (!edit || typeof edit !== "object") return false;
         const item = edit as ProofreadingEdit;
-        return isProofreadingKind(item.kind) && typeof item.before === "string" && typeof item.after === "string" && lessonFixes(lesson).some((fix) => fix.id === item.fixId);
+        return isProofreadingKind(item.kind) && typeof item.before === "string" && typeof item.after === "string" && passageTargets(lesson).some((target) => typeof target !== "string" && target.id === item.fixId);
       }).slice(-30);
     }
     return { selected: lessonsForGrade(grade).some((lesson) => lesson.id === value.selected) ? value.selected : fallback.selected, drafts, completed: value.completed.filter((id: unknown) => typeof id === "string" && validIds.has(id)), assisted: value.assisted.filter((id: unknown) => typeof id === "string" && validIds.has(id)), ...(Object.keys(proofreading).length ? { proofreading } : {}) };

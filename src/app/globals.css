@@ -246,10 +246,15 @@ body {
 .proof-tool[aria-pressed="true"] { background: #e4f2e6; outline: 2px solid #308747; outline-offset: 1px; }
 .proof-tool:disabled { opacity: .45; cursor: default; }
 .proof-tool:focus-visible { outline: 2px solid #308747; outline-offset: 2px; }
-.proof-target { display: inline-flex; flex-direction: column; vertical-align: bottom; max-width: 100%; position: relative; }
-.proof-annotation { height: 24px; display: flex; align-items: center; gap: 2px; max-width: 20ch; overflow: hidden; white-space: nowrap; font-size: .7rem; line-height: 1; color: #a54242; }
+.proof-target { display: inline; position: relative; }
+.proof-annotation { position: absolute; top: -24px; left: 0; height: 22px; display: flex; align-items: center; color: #a54242; pointer-events: none; }
 .proof-annotation svg { height: 22px; width: 22px; flex-shrink: 0; }
-.proof-targets-ready .grammar-edit { outline: 2px dashed #308747; outline-offset: 2px; cursor: copy; }
+.proof-word { display: inline; margin: 0; padding: 0; border: 0; border-radius: 2px; background: transparent; font: inherit; line-height: inherit; color: inherit; text-align: inherit; cursor: text; white-space: pre-wrap; }
+.proof-word:focus-visible { outline: 2px solid #308747; outline-offset: 2px; }
+.proof-targets-ready .proof-word { cursor: copy; }
+.proof-targets-ready .proof-word:hover { outline: 1px dashed #91bf9b; outline-offset: 2px; }
+.proof-word-deleted { text-decoration: line-through; color: #a54242; }
+.proof-word-checked { text-decoration: underline; text-decoration-color: #308747; text-underline-offset: 4px; }
 .proof-dialog { width: min(440px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); padding: 1.5rem; border: 1px solid #d6ebd7; border-radius: 8px; background: #fff; color: #23302a; box-shadow: 0 16px 60px #23302a33; }
 .proof-dialog::backdrop { background: #23302a66; }
 @media (max-width: 380px) { .proof-tool { width: 76px; } }

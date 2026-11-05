@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { checkGrammarLesson, emptyGrammarProgress, grammarStorageKey, lessonsForGrade, restoreGrammarProgress, type GrammarProgress } from "@/lib/grammar-lessons";
+import { checkGrammarLesson, emptyGrammarProgress, grammarStorageKey, lessonsForGrade, passageTargets, restoreGrammarProgress, type GrammarProgress } from "@/lib/grammar-lessons";
 import { ProofreadingPassage } from "@/components/ProofreadingPassage";
 
 export function GrammarPractice({ studentId, grade }: { studentId: string; grade: number }) {
@@ -75,7 +75,9 @@ export function GrammarPractice({ studentId, grade }: { studentId: string; grade
           <legend className="mb-3 text-sm font-semibold">Editing challenge</legend>
           <ProofreadingPassage key={lesson.id} lesson={lesson} values={values} checked={checked} disabled={!ready} edits={progress.proofreading?.[lesson.id] ?? []} onChange={(fixId, value, kind) => {
             const history = progress.proofreading?.[lesson.id] ?? [];
-            const before = values[fixId] ?? results.find((fix) => fix.id === fixId)!.original;
+            const target = passageTargets(lesson).find((part) => typeof part !== "string" && part.id === fixId);
+            if (!target || typeof target === "string") return;
+            const before = values[fixId] ?? target.original;
             save({ ...progress, drafts: { ...progress.drafts, [lesson.id]: { ...values, [fixId]: value } }, proofreading: { ...progress.proofreading, [lesson.id]: kind ? [...history, { fixId, kind, before, after: value }].slice(-30) : history.filter((edit) => edit.fixId !== fixId) } });
             setChecked(false);
           }} onUndo={() => {

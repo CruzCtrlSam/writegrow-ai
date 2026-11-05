@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { checkGrammarLesson, lessonFixes, type GrammarLesson } from "@/lib/grammar-lessons";
+import { checkGrammarLesson, passageTargets, type GrammarLesson } from "@/lib/grammar-lessons";
 import { applyProofreadingMark, isProofreadingKind, PROOFREADING_MARKS, type ProofreadingEdit, type ProofreadingKind } from "@/lib/proofreading";
 
 // Original vector paths for conventional proofreading marks, drawn for WriteGrow.
@@ -34,7 +34,7 @@ export function ProofreadingPassage({ lesson, values, checked, edits, disabled, 
   const [notice, setNotice] = useState("");
   const dialog = useRef<HTMLDialogElement>(null);
   const textField = useRef<HTMLInputElement>(null);
-  const fixes = lessonFixes(lesson);
+  const targets = passageTargets(lesson);
   const correctIds = new Set(checkGrammarLesson(lesson, values).filter((result) => result.correct).map((result) => result.id));
 
   useEffect(() => {
@@ -48,7 +48,9 @@ export function ProofreadingPassage({ lesson, values, checked, edits, disabled, 
 
   function openMark(fixId: string, kind: ProofreadingKind) {
     if (disabled) return;
-    const text = values[fixId] ?? fixes.find((fix) => fix.id === fixId)!.original;
+    const target = targets.find((part) => typeof part !== "string" && part.id === fixId);
+    if (!target || typeof target === "string") return;
+    const text = values[fixId] ?? target.original;
     const start = kind === "insert" ? text.length : 0;
     const end = kind === "insert" ? text.length : kind === "capitalize" || kind === "lowercase" ? Math.min(1, text.length) : text.length;
     setEditor({ fixId, kind, text, start, end, addition: "" });
@@ -72,23 +74,20 @@ export function ProofreadingPassage({ lesson, values, checked, edits, disabled, 
       </button>)}
       <button type="button" className="proof-tool" title="Undo last proofreading mark" aria-label="Undo last proofreading mark" disabled={disabled || !edits.length} onClick={onUndo}><span className="text-2xl" aria-hidden="true">&#8630;</span><span>Undo</span></button>
     </div>
-    <p className="sr-only" role="status">{selected ? `${PROOFREADING_MARKS.find((mark) => mark.kind === selected)!.label} selected. Choose a highlighted phrase.` : notice}</p>
+    <p className="sr-only" role="status">{selected ? `${PROOFREADING_MARKS.find((mark) => mark.kind === selected)!.label} selected. Choose text in the passage.` : notice}</p>
     <div className={`grammar-passage ${dragging || selected ? "proof-targets-ready" : ""}`}>
-      {lesson.parts.map((part, index) => {
+      {targets.map((part, index) => {
         if (typeof part === "string") return <span key={index}>{part}</span>;
         const value = values[part.id] ?? part.original;
         const mark = [...edits].reverse().find((edit) => edit.fixId === part.id);
         const correct = checked && correctIds.has(part.id);
         return <span key={part.id} className="proof-target" onDragOver={(event) => { if (event.dataTransfer.types.includes(dragType)) { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; } }}
           onDrop={(event) => { const kind = event.dataTransfer.getData(dragType); if (isProofreadingKind(kind)) { event.preventDefault(); openMark(part.id, kind); } }}>
-          <span className="proof-annotation" title={mark ? `${PROOFREADING_MARKS.find((item) => item.kind === mark.kind)!.label}: ${mark.before} to ${mark.after || "removed"}` : undefined}>
-            {mark && <><Mark kind={mark.kind} /><span className={mark.kind === "delete" || mark.kind === "replace" ? "line-through" : ""}>{mark.before}</span></>}
-          </span>
-          <input aria-label={`Fix ${fixes.findIndex((fix) => fix.id === part.id) + 1}: ${part.original}`} aria-describedby={checked ? `result-${part.id}` : undefined} disabled={disabled} autoComplete="off" spellCheck={false} className={`grammar-edit ${correct ? "grammar-edit-correct" : ""}`}
-            style={{ width: `${Math.max(5, Math.min(22, Math.max(part.original.length, ...part.answers.map((answer) => answer.length)) + 2))}ch` }} value={value}
-            onClick={() => { if (selected) openMark(part.id, selected); }}
-            onKeyDown={(event) => { if (selected && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); openMark(part.id, selected); } }}
-            onChange={(event) => onChange(part.id, event.target.value)} />
+          {mark && <span className="proof-annotation" title={`${PROOFREADING_MARKS.find((item) => item.kind === mark.kind)!.label}: ${mark.before} to ${mark.after || "removed"}`}><Mark kind={mark.kind} /></span>}
+          <button type="button" aria-label={`Edit text: ${value || part.original}`} disabled={disabled} className={`proof-word ${mark && correct ? "proof-word-checked" : ""} ${!value ? "proof-word-deleted" : ""}`}
+            onClick={() => openMark(part.id, selected ?? "replace")}>
+            {value || part.original}
+          </button>
         </span>;
       })}
     </div>

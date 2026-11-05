@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { applyProofreadingMark, isProofreadingKind } from "./proofreading";
-import { GRAMMAR_LESSONS, checkGrammarLesson, emptyGrammarProgress, grammarStorageKey, lessonFixes, lessonsForGrade, restoreGrammarProgress } from "./grammar-lessons";
+import { GRAMMAR_LESSONS, checkGrammarLesson, emptyGrammarProgress, grammarStorageKey, lessonFixes, lessonsForGrade, passageTargets, passageText, restoreGrammarProgress } from "./grammar-lessons";
 
 const ids = new Set<string>();
 for (let grade = 3; grade <= 8; grade++) {
@@ -61,3 +61,17 @@ assert.deepEqual(restoreGrammarProgress(JSON.stringify({ ...saved, proofreading:
 const removalLesson = lessonsForGrade(3)[3];
 assert.ok(checkGrammarLesson(removalLesson, { extra: "", apostrophe: "don't" }).every((result) => result.correct));
 console.log("Proofreading checks passed: insertion, deletion, replacement, capitalization, lowercase, safe ranges, and saved marks.");
+
+for (const lesson of GRAMMAR_LESSONS) {
+  const targets = passageTargets(lesson).filter((part) => typeof part !== "string");
+  assert.ok(targets.length > lessonFixes(lesson).length, "Correct words must be editable too");
+  assert.equal(new Set(targets.map((target) => target.id)).size, targets.length);
+  assert.equal(passageText(lesson, {}), lesson.parts.map((part) => typeof part === "string" ? part : part.original).join(""));
+}
+const earlierCopy = passageTargets(removalLesson).find((part) => typeof part !== "string" && part.original === "can" && part.id !== "extra");
+assert.ok(earlierCopy && typeof earlierCopy !== "string");
+assert.equal(checkGrammarLesson(removalLesson, { [earlierCopy.id]: "" })[0].correct, true, "Either repeated copy can be removed");
+assert.ok(checkGrammarLesson(removalLesson, { [earlierCopy.id]: "", apostrophe: "don't" }).every((result) => result.correct));
+const generalEdit = { ...saved, drafts: { [removalLesson.id]: { [earlierCopy.id]: "" } }, proofreading: { [removalLesson.id]: [{ fixId: earlierCopy.id, kind: "delete" as const, before: "can", after: "" }] } };
+assert.deepEqual(restoreGrammarProgress(JSON.stringify(generalEdit), 3), generalEdit);
+console.log("Unmarked passage checks passed: all words editable, original text preserved, equivalent edits accepted, and general edits saved.");
