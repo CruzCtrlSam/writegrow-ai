@@ -8,6 +8,7 @@ import { CATEGORIES } from "@/lib/static-app";
 import { createClient } from "@/lib/supabase/client";
 import type { PromptCategory, Student, WritingLevel } from "@/lib/types";
 import { brandVoice } from "@/services/brandVoice";
+import { StudentAccessNote } from "@/components/StudentAccessNote";
 
 export default function WritePage() {
   return (
@@ -51,11 +52,13 @@ function WritePageInner() {
       </h1>
       <p className="mt-1 text-ink/60">{brandVoice.messages.writing.pageSubtitle}</p>
       <div className="mt-6">
+        <StudentAccessNote studentId={student.id} />
         <WritingEditor
           studentId={student.id}
           studentName={student.name}
           minWords={minWords}
           initialCategory={initialCategory}
+          initialPlannerOpen={searchParams.get("planner") === "1"}
         />
       </div>
     </div>

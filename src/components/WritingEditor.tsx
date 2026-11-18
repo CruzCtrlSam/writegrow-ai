@@ -16,6 +16,8 @@ import {
 import { brandVoice } from "@/services/brandVoice";
 import { WritingPlanner } from "@/components/WritingPlanner";
 import { planStorageKey } from "@/lib/writing-plan";
+import { useStudentAccess } from "@/lib/pilot";
+import Link from "next/link";
 
 interface Prompt {
   submissionId?: string | null;
@@ -178,11 +180,13 @@ export function WritingEditor({
   studentName,
   minWords,
   initialCategory,
+  initialPlannerOpen = false,
 }: {
   studentId: string;
   studentName: string;
   minWords: number;
   initialCategory?: PromptCategory;
+  initialPlannerOpen?: boolean;
 }) {
   const [prompt, setPrompt] = useState<Prompt | null>(null);
   const [promptLimit, setPromptLimit] = useState<PromptLimit | null>(null);
@@ -199,7 +203,8 @@ export function WritingEditor({
   const [coaching, setCoaching] = useState(false);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [error, setError] = useState<string | null>(null);
-  const [plannerOpen, setPlannerOpen] = useState(false);
+  const [plannerOpen, setPlannerOpen] = useState(initialPlannerOpen);
+  const { access, error: accessError } = useStudentAccess(studentId);
 
   const words = wordCount(content);
   const pct = Math.min(100, Math.round((words / minWords) * 100));
@@ -313,7 +318,7 @@ export function WritingEditor({
       <div className="card overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 bg-sprout-500 px-4 py-3 text-white sm:px-5">
           <span className="text-sm font-semibold">
-            {prompt ? CATEGORY_LABELS[prompt.category] : "Loading…"}
+            {prompt ? CATEGORY_LABELS[prompt.category] : loadingPrompt ? "Loading..." : "Writing practice"}
             {prompt?.character_trait && (
               <span className="ml-2 rounded-full bg-white/20 px-2 py-0.5 text-xs capitalize">
                 {prompt.character_trait}
@@ -354,8 +359,11 @@ export function WritingEditor({
       </div>
 
       {/* Editor */}
-      <div className={plannerOpen ? "writing-workspace" : "space-y-4"}>
-      {prompt && !loadingPrompt && <WritingPlanner
+      {accessError && <p role="alert">{accessError}</p>}
+      {access && !access.full_access && <p className="border-y border-sprout-100 py-3 text-sm">The full writing planner is part of the four-week pilot. <Link href="/parent/dashboard" className="font-semibold text-sprout-700 underline">Parent access details</Link>. Your saved plans stay safe.</p>}
+      <div className={plannerOpen && access?.full_access ? "writing-workspace" : "space-y-4"}>
+      {prompt && !loadingPrompt && access?.full_access && <WritingPlanner
+        studentId={studentId}
         key={planStorageKey(studentId, prompt.title, prompt.body, prompt.category)}
         storageKey={planStorageKey(studentId, prompt.title, prompt.body, prompt.category)}
         category={prompt.category}

@@ -4,12 +4,15 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { GrammarPractice } from "@/components/GrammarPractice";
 import { createClient } from "@/lib/supabase/client";
+import { StudentAccessNote } from "@/components/StudentAccessNote";
+import { useStudentAccess } from "@/lib/pilot";
 
 export default function LearnPage() {
   return <Suspense fallback={<p className="py-6 text-ink/60">Loading lessons...</p>}><LearningSpace /></Suspense>;
 }
 function LearningSpace() {
   const studentId = useSearchParams().get("studentId");
+  const { access, error: accessError } = useStudentAccess(studentId ?? "");
   const [student, setStudent] = useState<{ id: string; grade: number } | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -33,5 +36,7 @@ function LearningSpace() {
   if (loading) return <p className="py-6 text-ink/60">Loading lessons...</p>;
   if (error) return <p className="py-6" role="alert">{error}</p>;
   if (!student) return <p className="py-6 text-ink/60">Choose a student from the parent dashboard.</p>;
-  return <div><p className="eyebrow">Learn a little. Grow a little.</p><h1 className="mt-1 font-display text-3xl font-semibold">Grammar studio</h1><GrammarPractice key={student.id} studentId={student.id} grade={student.grade} /></div>;
+  if (accessError) return <p role="alert">{accessError}</p>;
+  if (!access) return <p>Checking access...</p>;
+  return <div><p className="eyebrow">Learn a little. Grow a little.</p><h1 className="mt-1 font-display text-3xl font-semibold">Grammar studio</h1><StudentAccessNote studentId={student.id} /><GrammarPractice key={student.id} studentId={student.id} grade={student.grade} fullAccess={access.full_access} /></div>;
 }

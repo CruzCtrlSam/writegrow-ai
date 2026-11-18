@@ -1,0 +1,7 @@
+[functions.pilot-checkout]
+verify_jwt = false
+[functions.pilot-status]
+verify_jwt = false
+[functions.pilot-webhook]
+verify_jwt = false
+# Checkout/status authenticate parent JWTs in their handlers; Stripe authenticates webhooks.

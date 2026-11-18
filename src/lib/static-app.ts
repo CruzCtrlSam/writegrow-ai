@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { studentAccess } from "@/lib/pilot";
 import { appPath } from "@/lib/paths";
 import { fallbackPrompt, countWords, type GeneratedPrompt } from "@/lib/prompts";
 import {
@@ -65,7 +66,17 @@ export async function requireUser() {
   return user;
 }
 
-export async function loadPrompt({
+const promptRequests = new Map<string, Promise<PromptPayload | PromptLimitPayload>>();
+export function loadPrompt(input: { studentId: string; category?: PromptCategory; forceNew?: boolean }): Promise<PromptPayload | PromptLimitPayload> {
+  const key = JSON.stringify([input.studentId, input.category, Boolean(input.forceNew)]);
+  const existing = promptRequests.get(key);
+  if (existing) return existing;
+  const request = performLoadPrompt(input);
+  promptRequests.set(key, request);
+  void request.finally(() => { if (promptRequests.get(key) === request) promptRequests.delete(key); }).catch(() => {});
+  return request;
+}
+async function performLoadPrompt({
   studentId,
   category,
   forceNew,
@@ -125,7 +136,8 @@ export async function loadPrompt({
     .eq("parent_id", user.id)
     .maybeSingle();
 
-  const weeklyLimit = promptsPerWeekFor(sub?.plan);
+  const access = await studentAccess(studentId);
+  const weeklyLimit = access.weekly_prompt_limit;
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   if (weeklyLimit !== null) {
     const { count } = await supabase
@@ -289,27 +301,9 @@ export async function addStudentFromBrowser(input: {
     throw new Error("Please enter a name and choose a grade between 3 and 8.");
   }
 
-  const { data: sub } = await supabase
-    .from("subscriptions")
-    .select("plan")
-    .eq("parent_id", user.id)
-    .maybeSingle();
-  const { count } = await supabase
-    .from("students")
-    .select("id", { count: "exact", head: true })
-    .eq("parent_id", user.id);
-
-  if ((count ?? 0) >= maxStudentsFor(sub?.plan)) {
-    throw new Error("You've reached your plan's student limit. Upgrade to add more.");
-  }
-
-  const { error } = await supabase.from("students").insert({
-    parent_id: user.id,
-    name: input.name.trim(),
-    grade: input.grade,
-    level: input.level,
-  });
+  const { data, error } = await supabase.rpc("create_student_profile", { p_name: input.name.trim(), p_grade: input.grade, p_level: input.level });
   if (error) throw new Error(error.message);
+  return data as string;
 }
 
 export async function updateSettingsFromBrowser(input: {
@@ -321,6 +315,7 @@ export async function updateSettingsFromBrowser(input: {
   const user = await requireUser();
   if (!user) throw new Error("Please log in again.");
 
+  if (input.plan || typeof input.aiEnabled === "boolean") throw new Error("Paid access is managed through verified pilot checkout.");
   if (typeof input.characterPromptsEnabled === "boolean") {
     const { error } = await supabase
       .from("users")

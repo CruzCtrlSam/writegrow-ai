@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { checkGrammarLesson, emptyGrammarProgress, grammarStorageKey, lessonsForGrade, passageTargets, restoreGrammarProgress, type GrammarProgress } from "@/lib/grammar-lessons";
 import { ProofreadingPassage } from "@/components/ProofreadingPassage";
+import { loadWorkspace, saveWorkspace } from "@/lib/workspaces";
 
-export function GrammarPractice({ studentId, grade }: { studentId: string; grade: number }) {
+export function GrammarPractice({ studentId, grade, fullAccess = true }: { studentId: string; grade: number; fullAccess?: boolean }) {
   const lessons = lessonsForGrade(grade);
   const [progress, setProgress] = useState<GrammarProgress>(() => emptyGrammarProgress(grade));
   const [ready, setReady] = useState(false);
@@ -13,20 +14,18 @@ export function GrammarPractice({ studentId, grade }: { studentId: string; grade
   const [attempts, setAttempts] = useState(0);
   const [hintLevel, setHintLevel] = useState(0);
   const [answersVisible, setAnswersVisible] = useState(false);
-  const lesson = lessons.find((item) => item.id === progress.selected) ?? lessons[0];
+  const lesson = (fullAccess ? lessons.find((item) => item.id === progress.selected) : lessons[0]) ?? lessons[0];
 
   useEffect(() => {
-    try {
-      setProgress(restoreGrammarProgress(localStorage.getItem(grammarStorageKey(studentId)), grade));
-      setSaveMessage("Progress saved on this device");
-    } catch { setSaveMessage("Saving unavailable. Keep this page open."); }
-    setReady(true);
+    let active = true;
+    loadWorkspace(studentId, "grammar", grammarStorageKey(studentId)).then(({ raw, cloud }) => { if (active) { setProgress(restoreGrammarProgress(raw, grade)); setSaveMessage(cloud ? "Progress saved to your account" : "Progress saved on this device"); } }).catch(() => { if (active) setSaveMessage("Saving unavailable. Keep this page open."); }).finally(() => { if (active) setReady(true); });
+    return () => { active = false; };
   }, [studentId, grade]);
 
   function save(next: GrammarProgress) {
     setProgress(next);
-    try { localStorage.setItem(grammarStorageKey(studentId), JSON.stringify(next)); setSaveMessage("Progress saved on this device"); }
-    catch { setSaveMessage("Could not save progress. Keep this page open."); }
+    setSaveMessage("Saving progress...");
+    saveWorkspace(studentId, "grammar", grammarStorageKey(studentId), next).then(() => setSaveMessage("Progress saved to your account")).catch((error) => setSaveMessage(error.message));
   }
   function select(id: string) {
     save({ ...progress, selected: id });
@@ -55,7 +54,7 @@ export function GrammarPractice({ studentId, grade }: { studentId: string; grade
       <p className="mt-2 text-sm text-ink/60">{completed} of {lessons.length} lessons complete</p>
       <progress className="mt-3 h-2 w-full accent-sprout-500" max={lessons.length} value={completed} aria-label="Lessons completed" />
       <ol className="mt-4 divide-y divide-sprout-100 border-y border-sprout-100">
-        {lessons.map((item, index) => <li key={item.id}><button type="button" disabled={!ready} aria-current={item.id === lesson.id ? "step" : undefined} className={`grammar-lesson-button ${item.id === lesson.id ? "bg-sprout-50 text-sprout-800" : "text-ink/70"}`} onClick={() => select(item.id)}>
+        {lessons.map((item, index) => <li key={item.id}><button type="button" disabled={!ready || (!fullAccess && index > 0)} aria-current={item.id === lesson.id ? "step" : undefined} className={`grammar-lesson-button ${item.id === lesson.id ? "bg-sprout-50 text-sprout-800" : "text-ink/70"}`} onClick={() => select(item.id)}>
           <span className="grammar-step" aria-hidden="true">{index + 1}</span>
           <span className="min-w-0"><span className="block font-semibold">{item.title}</span><span className="mt-1 block text-xs font-normal">{item.format} · {progress.completed.includes(item.id) ? "Complete" : item.skill}</span></span>
         </button></li>)}
@@ -98,7 +97,7 @@ export function GrammarPractice({ studentId, grade }: { studentId: string; grade
         {checked && <div className="mt-5 border-l-2 border-sprout-400 pl-4">
           <h3 className="font-semibold text-sprout-800">{allFixed ? assisted ? "Nice work practicing!" : "Excellent editing!" : fixed ? "Nice progress!" : "Good start. Let's take one small step."}</h3>
           <p className="mt-1 text-sm text-ink/75">{allFixed ? assisted ? "You completed this lesson with support." : `You fixed all ${results.length} spots yourself.` : `You fixed ${fixed} of ${results.length} spots. ${results.length - fixed === 1 ? "Just one is left." : "Try a clue for your next fix."}`}</p>
-          {allFixed && nextLesson && <button type="button" className="btn-primary mt-4" onClick={() => select(nextLesson.id)}>Next lesson</button>}
+          {allFixed && nextLesson && fullAccess && <button type="button" className="btn-primary mt-4" onClick={() => select(nextLesson.id)}>Next lesson</button>}
           {allFixed && completed === lessons.length && <p className="mt-2 text-sm font-semibold text-sprout-700">Learning path complete. Bring these skills to your next draft!</p>}
           {allFixed && <button type="button" className="btn-ghost mt-4" onClick={() => {
             const drafts = { ...progress.drafts };

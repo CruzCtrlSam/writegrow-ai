@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { PromptCategory } from "@/lib/types";
+import { loadWorkspace, saveWorkspace } from "@/lib/workspaces";
 import { coachPlan, type PlanningFeedback } from "@/lib/planning-coach";
 import { emptyPlan, restorePlan, suggestedPlanner, type PlannerKind, type WritingPlan } from "@/lib/writing-plan";
 
@@ -13,7 +14,8 @@ const layouts: { kind: PlannerKind; label: string }[] = [
 const storyLabels = ["Characters", "Setting", "Beginning", "The problem", "What happens next?", "Ending"];
 const opinionLabels = ["My opinion", "Reason 1", "An example", "Reason 2", "Another example", "Reason 3", "One more example", "My conclusion"];
 
-export function WritingPlanner({ storageKey, category, open, onOpenChange, onStartWriting }: {
+export function WritingPlanner({ studentId, storageKey, category, open, onOpenChange, onStartWriting }: {
+  studentId?: string;
   storageKey: string;
   category: PromptCategory;
   open: boolean;
@@ -26,24 +28,16 @@ export function WritingPlanner({ storageKey, category, open, onOpenChange, onSta
   const [saveStatus, setSaveStatus] = useState("Loading plan...");
 
   useEffect(() => {
-    try {
-      setPlan(restorePlan(localStorage.getItem(storageKey), category));
-      setSaveStatus("Saved on this device");
-    } catch {
-      setSaveStatus("Saving unavailable. Keep this page open.");
-    }
-    setReady(true);
-  }, [storageKey, category]);
+    let active = true;
+    loadWorkspace(studentId, "planner", storageKey).then(({ raw, cloud }) => { if (active) { setPlan(restorePlan(raw, category)); setSaveStatus(cloud ? "Plan saved to your account" : "Saved on this device"); } }).catch(() => { if (active) setSaveStatus("Saving unavailable. Keep this page open."); }).finally(() => { if (active) setReady(true); });
+    return () => { active = false; };
+  }, [studentId, storageKey, category]);
 
   function update(next: WritingPlan) {
     setPlan(next);
     setFeedback(null);
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(next));
-      setSaveStatus("Saved on this device");
-    } catch {
-      setSaveStatus("Could not save. Keep this page open.");
-    }
+    setSaveStatus("Saving plan...");
+    saveWorkspace(studentId, "planner", storageKey, next).then(() => setSaveStatus(studentId ? "Plan saved to your account" : "Saved on this device")).catch((error) => setSaveStatus(error.message));
   }
 
   function updateList(list: "ideas" | "story" | "opinion", index: number, value: string) {

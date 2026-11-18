@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:feedback": "node scripts/build-feedback.mjs",
+    "test:pilot": "node --import tsx src/lib/pilot.test.ts",
     "start": "next start",
     "lint": "next lint",
     "test": "node --import tsx src/services/brandVoice.test.ts && node --import tsx src/lib/diagnostics.test.ts && node --import tsx src/lib/plans.test.ts && node --import tsx src/lib/usage.test.ts && node --import tsx src/lib/prompts.test.ts && node --import tsx src/lib/achievements.test.ts && node --import tsx src/lib/writing-plan.test.ts && node --import tsx src/lib/grammar-lessons.test.ts"
@@ -25,6 +27,7 @@
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.4.20",
+    "esbuild": "0.28.1",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.13",
     "tsx": "^4.22.4",

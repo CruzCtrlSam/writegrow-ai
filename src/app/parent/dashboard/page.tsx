@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { SkillSprout } from "@/components/SkillSprout";
+import { PilotDashboard } from "@/components/PilotDashboard";
 import { createClient } from "@/lib/supabase/client";
 import { LEVEL_LABELS, SKILLS, type Student, type WritingLevel } from "@/lib/types";
 import { brandVoice } from "@/services/brandVoice";
@@ -11,6 +12,7 @@ interface Overview {
   student: Student;
   avg: number;
   submitted: number;
+  grammarCompleted: number;
 }
 
 export default function ParentDashboard() {
@@ -36,7 +38,7 @@ export default function ParentDashboard() {
       const studentList = (students ?? []) as Student[];
       const rows = await Promise.all(
         studentList.map(async (student) => {
-          const [{ data: scores }, { count }] = await Promise.all([
+          const [{ data: scores }, { count }, { data: grammar }] = await Promise.all([
             supabase
               .from("skill_scores")
               .select("score")
@@ -48,11 +50,12 @@ export default function ParentDashboard() {
               .select("id", { count: "exact", head: true })
               .eq("student_id", student.id)
               .eq("status", "submitted"),
+            supabase.from("student_workspaces").select("data").eq("student_id", student.id).eq("kind", "grammar").eq("workspace_key", "default").maybeSingle(),
           ]);
           const avg = scores?.length
             ? Math.round(scores.reduce((sum, row) => sum + (row.score as number), 0) / scores.length)
             : 0;
-          return { student, avg, submitted: count ?? 0 };
+          return { student, avg, submitted: count ?? 0, grammarCompleted: Array.isArray(grammar?.data?.completed) ? grammar.data.completed.length : 0 };
         }),
       );
 
@@ -78,7 +81,7 @@ export default function ParentDashboard() {
             {brandVoice.getBrandPromise()}
           </p>
           <p className="mt-1 text-ink/60">
-            Plan: <span className="font-semibold capitalize">{plan}</span>
+            Base access: <span className="font-semibold capitalize">{plan}</span>
             {" · "}
             {overviews.length} student{overviews.length === 1 ? "" : "s"}
           </p>
@@ -93,6 +96,7 @@ export default function ParentDashboard() {
         <p className="mt-1 text-sm text-ink/75">{brandVoice.getCoachNote()}</p>
       </div>
 
+      <PilotDashboard students={overviews.map(({ student }) => student)} />
       {overviews.length === 0 ? (
         <div className="card mt-8 flex flex-col items-center p-6 text-center sm:p-12">
           <SkillSprout score={8} size={96} />
@@ -106,7 +110,7 @@ export default function ParentDashboard() {
         </div>
       ) : (
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {overviews.map(({ student, avg, submitted }) => {
+          {overviews.map(({ student, avg, submitted, grammarCompleted }) => {
             const base = `/student`;
             const query = `studentId=${student.id}`;
             return (
@@ -127,6 +131,7 @@ export default function ParentDashboard() {
                   <span className="rounded-lg bg-honey-100 px-2.5 py-1 font-medium text-honey-500">
                     {submitted} submitted
                   </span>
+                  <span className="rounded-lg bg-sprout-50 px-2.5 py-1 text-sm text-sprout-700">{grammarCompleted} grammar lessons complete</span>
                 </div>
                 <div className="mt-5 flex flex-wrap gap-2">
                   <Link href={`${base}/dashboard?${query}`} className="btn-primary flex-1">
