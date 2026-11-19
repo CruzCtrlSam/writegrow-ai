@@ -34,9 +34,10 @@ export function AppNav({
           <Logo />
         </Link>
 
-        <nav className="ml-2 hidden flex-1 items-center gap-1 md:flex">
+        <nav className="ml-2 hidden flex-1 items-center gap-1 lg:flex">
           {links.map((l) => {
-            const active = pathname === l.href || pathname.startsWith(l.href + "/");
+            const path = l.href.split("?")[0];
+            const active = pathname.replace(/\/$/, "") === path || pathname.startsWith(path + "/");
             return (
               <Link
                 key={l.href}
@@ -66,9 +67,10 @@ export function AppNav({
       </div>
 
       {/* mobile nav */}
-      <nav className="flex gap-1 overflow-x-auto border-t border-black/5 px-3 py-2 md:hidden">
+      <nav className="flex gap-1 overflow-x-auto border-t border-black/5 px-3 py-2 lg:hidden">
         {links.map((l) => {
-          const active = pathname === l.href || pathname.startsWith(l.href + "/");
+          const path = l.href.split("?")[0];
+          const active = pathname.replace(/\/$/, "") === path || pathname.startsWith(path + "/");
           return (
             <Link
               key={l.href}

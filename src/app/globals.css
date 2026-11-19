@@ -258,3 +258,8 @@ body {
 .proof-dialog { width: min(440px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); padding: 1.5rem; border: 1px solid #d6ebd7; border-radius: 8px; background: #fff; color: #23302a; box-shadow: 0 16px 60px #23302a33; }
 .proof-dialog::backdrop { background: #23302a66; }
 @media (max-width: 380px) { .proof-tool { width: 76px; } }
+
+.cce-frame { display: block; width: 100%; border: 0; }
+@media (max-width: 639px) {
+  .cce-frame { width: calc(100% + 2rem); margin-inline: -1rem; }
+}
