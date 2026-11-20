@@ -117,10 +117,6 @@ function StudentDashboardInner() {
         <div><p className="eyebrow">Grammar studio</p><h3 className="mt-1 font-display text-xl font-semibold">Small fixes. Growing skills.</h3><p className="mt-1 text-sm text-ink/60">Grammar practice for grade {student.grade}.</p></div>
         <Link href={`/student/learn?${query}`} className="btn-ghost">Start learning</Link>
       </div>
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-b border-sprout-200 pb-5">
-        <div><p className="eyebrow">Separate adventures</p><h3 className="mt-1 font-display text-xl font-semibold">Cross-Country Escape</h3><p className="mt-1 text-sm text-ink/60">Maps, mysteries, and subject adventures for grades 3-8.</p></div>
-        <Link href={`/student/escape?${query}`} className="btn-ghost">Open adventures</Link>
-      </div>
       <h2 className="mt-8 font-display text-xl font-semibold">Choose today's growth path</h2>
       <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {(Object.keys(CATEGORY_LABELS) as PromptCategory[]).map((cat) => (
